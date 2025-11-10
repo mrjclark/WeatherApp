@@ -1,1 +1,4 @@
-https://archive-api.open-meteo.com/v1/archive?latitude=52.52&longitude=13.41&start_date=2025-10-23&end_date=2025-11-06&hourly=temperature_2m
+START=$1
+END=$2
+
+echo "https://archive-api.open-meteo.com/v1/archive?latitude=29.42&longitude=-95.46&start_date=$START&end_date=$END&hourly=temperature_2m,pressure_msl,relative_humidity_2m&timezone=America/Chicago"
