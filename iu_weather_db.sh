@@ -13,10 +13,38 @@ UPDATE_FILE="update_weather_db.sh"
 
 trap "Error at line ${LINENO}" ERR
 
+
+# infer_type: Returns symbolic type label for a given input
+infer_type() {
+  local value="$1"
+
+  if [[ -z "$value" ]]; then
+    echo "empty"
+  elif [[ "$value" == "true" || "$value" == "false" ]]; then
+    echo "BOOLEAN"
+  elif [[ "$value" =~ ^-?[0-9]+$ ]]; then
+    echo "INTEGER"
+  elif [[ "$value" =~ ^-?[0-9]+\.[0-9]+$ ]]; then
+    echo "REAL"
+  elif [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+    echo "TEXT"
+  else
+    echo "TEXT"
+  fi
+}
+
 function getJson() {
-	API_URL="https://archive-api.open-meteo.com/v1/archive?latitude=29.42&longitude=-95.46&start_date=$1&end_date=$2&hourly=temperature_2m,surface_pressure,relative_humidity_2m&timezone=America/Chicago"
-	curl $API_URL > $3
+	API_URL="https://archive-api.open-meteo.com/v1/archive?latitude=$1&longitude=$2&start_date=$3&end_date=$4&hourly=$5&timezone=$6"
+	curl $API_URL > $7
 	echo $API_URL
+}
+
+function createTableFromJson() {
+	
+}
+
+function createCSV() {
+	sqlite3 $1 "PRAGMA table_info($2);" | awk -F'|' '{print $2}' | paste -sd',' - >$3
 }
 
 function jsonToCsv() {
