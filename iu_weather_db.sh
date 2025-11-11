@@ -9,7 +9,10 @@ WEATHER_TABLE="weather"
 WEATHER_JSON="weather-info.json"
 WEATHER_CSV="weather-info.csv"
 UPDATE_FILE="update_weather_db.sh"
-
+LAT_FIELD=29.3522 
+LON_FIELD=-95.4602
+TZ_FIELD="America/Chicago"
+DATA_FIELDS="temperature_2m,surface_pressure,relative_humidity_2m"
 
 trap "Error at line ${LINENO}" ERR
 
@@ -39,8 +42,35 @@ function getJson() {
 	echo $API_URL
 }
 
+function getJsonFields() {
+	if [[ -z $2 ]]; then
+		echo $(jq "keys" $1)
+	else
+		echo $(jq "$2 | keys")
+	fi
+}
+
 function createTableFromJson() {
 	
+	sqlite3 $1 "CREATE TABLE IF NOT EXISTS $2 (
+		id TEXT PRIMARY KEY
+		,latitude REAL
+		,longitude REAL
+		,utc_offset_seconds INTEGER
+		,elevation REAL
+		,hourly_time TEXT
+		,unit_time TEXT
+		,timezone TEXT
+		,hourly_temperature REAL
+		,unit_temperature TEXT
+		,hourly_surface_pressure REAL
+		,unit_pressure TEXT
+		,hourly_relative_humidity INTEGER
+		,unit_relative_humidity TEXT
+	)"
+
+	sqlite3 $1 "CREATE INDEX id_latitude_longitude_time ON $2 (latitude, longitude, hourly_time); CREATE INDEX id_time on $2 (hourly_time)"
+
 }
 
 function createCSV() {
@@ -77,30 +107,29 @@ function loadDb() {
 EOF
 }
 
-logEvent() {
+# log function: Ensures logging at different levels, as well as custom logging.
+function logEvent() {
 	echo "$(date -Isecond) | $1 | $2" >> weatherApp.log
 }
 
-logError() {
+function logError() {
 	logEvent "ERROR" $1
 }
 
-logWarning() {
+function logWarning() {
 	logEvent "WARNING" $1
 }
 
-logInfo() {
+function logInfo() {
 	logEvent "INFO" $1
 }
 
-logDebug() {
+function logDebug() {
 	logEvent "DEBUG" $1
 }
 
-#!/bin/bash
-
 # validate_inputs: Ensures all inputs are correctly formatted and within allowed ranges
-validate_inputs() {
+function validateInputs() {
   local start_date="$1"
   local end_date="$2"
   local latitude="$3"
@@ -146,32 +175,15 @@ validate_inputs() {
 }
 
 if [ ! -f $WEATHER_DB ]; then
-	sqlite3 $WEATHER_DB "CREATE TABLE IF NOT EXISTS $WEATHER_TABLE (
-		id INTEGER PRIMARY KEY AUTOINCREMENT
-		,latitude REAL
-		,longitude REAL
-		,utc_offset_seconds INTEGER
-		,elevation REAL
-		,hourly_time TEXT
-		,unit_time TEXT
-		,timezone TEXT
-		,hourly_temperature REAL
-		,unit_temperature TEXT
-		,hourly_surface_pressure REAL
-		,unit_pressure TEXT
-		,hourly_relative_humidity INTEGER
-		,unit_relative_humidity TEXT
-	)"
-
-	sqlite3 $WEATHER_DB "CREATE INDEX id_latitude_longitude_time ON $WEATHER_TABLE (latitude, longitude, hourly_time); CREATE INDEX id_time on $WEATHER_TABLE (hourly_time)"
-
+	getJson $LAT_FIELD $LON_FIELD $END_DATE $END_DATE $DATA_FIELDS $TZ_FIELD $WEATHER_JSON 
+	createTableFromJson $WEATHER_DB $WEATHER_TABLE
 else
 	LAST_TIME=$(sqlite3 $WEATHER_DB "SELECT MAX(hourly_time) FROM $WEATHER_TABLE")
 	START_DATE=$(date -d "${LAST_TIME:0:10} - 5 days" +%Y-%m-%d)
 fi 
 
 
-getJson $START_DATE $END_DATE $WEATHER_JSON
+getJson $LAT_FIELD $LON_FIELD $START_DATE $END_DATE $DATA_FIELDS $TZ_FIELD $WEATHER_JSON 
 jsonToCsv $WEATHER_JSON $WEATHER_CSV
 loadDb $WEATHER_DB $WEATHER_CSV $WEATHER_TABLE
 
