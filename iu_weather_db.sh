@@ -140,8 +140,8 @@ if [ ! -f $WEATHER_DB ]; then
 	sqlite3 $WEATHER_DB "CREATE INDEX id_latitude_longitude_time ON $WEATHER_TABLE (latitude, longitude, hourly_time); CREATE INDEX id_time on $WEATHER_TABLE (hourly_time)"
 
 else
-	START_DATE=\$(date -d "\${LAST_TIME:0:10} - 5 days" +%Y-%m-%d)
-fi
+	START_DATE=$(date -d "${LAST_TIME:0:10} - 5 days" +%Y-%m-%d)
+fi 
 
 
 getJson $START_DATE $END_DATE
