@@ -20,12 +20,11 @@ function getJson() {
 }
 
 function jsonToCsv() {
-
+	
 	jq -r '
 	  . as $root |
 	  [range(0; $root.hourly.time | length)][] as $i |
 	  [
-	    $i,
 	    $root.latitude,
 	    $root.longitude,
 	    $root.utc_offset_seconds,
@@ -44,10 +43,9 @@ function jsonToCsv() {
 }
 
 function loadDb() {
-
 	sqlite3 "$1" <<EOF
-	.mode csv
-	.import $2 $3
+.mode csv
+.import $2 $3
 EOF
 }
 
@@ -73,7 +71,7 @@ logDebug() {
 
 #!/bin/bash
 
-# 📜 validate_inputs: Ensures all inputs are correctly formatted and within allowed ranges
+# validate_inputs: Ensures all inputs are correctly formatted and within allowed ranges
 validate_inputs() {
   local start_date="$1"
   local end_date="$2"
@@ -84,7 +82,7 @@ validate_inputs() {
   # Validate date format YYYY-MM-DD
   for date in "$start_date" "$end_date"; do
     if [[ ! "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
-      echo "❌ Invalid date format: $date (expected YYYY-MM-DD)"
+      echo "Invalid date format: $date (expected YYYY-MM-DD)"
       return 1
     fi
   done
@@ -92,18 +90,18 @@ validate_inputs() {
   # Validate numeric latitude and longitude
   for coord in "$latitude" "$longitude"; do
     if [[ ! "$coord" =~ ^-?[0-9]+(\.[0-9]+)?$ ]]; then
-      echo "❌ Invalid coordinate: $coord (expected numeric)"
+      echo "Invalid coordinate: $coord (expected numeric)"
       return 1
     fi
   done
 
   # Validate latitude/longitude bounds
   if (( $(echo "$latitude < -90 || $latitude > 90" | bc -l) )); then
-    echo "❌ Latitude out of range: $latitude"
+    echo "Latitude out of range: $latitude"
     return 1
   fi
   if (( $(echo "$longitude < -180 || $longitude > 180" | bc -l) )); then
-    echo "❌ Longitude out of range: $longitude"
+    echo "Longitude out of range: $longitude"
     return 1
   fi
 
@@ -111,17 +109,17 @@ validate_inputs() {
   if [[ -n "$unit" ]]; then
     case "$unit" in
       "Celsius"|"Fahrenheit"|"Kelvin") ;;
-      *) echo "❌ Invalid unit: $unit (allowed: Celsius, Fahrenheit, Kelvin)"; return 1 ;;
+      *) echo "Invalid unit: $unit (allowed: Celsius, Fahrenheit, Kelvin)"; return 1 ;;
     esac
   fi
 
-  echo "✅ Inputs validated: $start_date to $end_date, lat=$latitude, lon=$longitude, unit=$unit"
+  echo "Inputs validated: $start_date to $end_date, lat=$latitude, lon=$longitude, unit=$unit"
   return 0
 }
 
 if [ ! -f $WEATHER_DB ]; then
 	sqlite3 $WEATHER_DB "CREATE TABLE IF NOT EXISTS $WEATHER_TABLE (
-		id INTEGER PRIMARY KEY
+		id INTEGER PRIMARY KEY AUTOINCREMENT
 		,latitude REAL
 		,longitude REAL
 		,utc_offset_seconds INTEGER
@@ -140,11 +138,12 @@ if [ ! -f $WEATHER_DB ]; then
 	sqlite3 $WEATHER_DB "CREATE INDEX id_latitude_longitude_time ON $WEATHER_TABLE (latitude, longitude, hourly_time); CREATE INDEX id_time on $WEATHER_TABLE (hourly_time)"
 
 else
+	LAST_TIME=$(sqlite3 $WEATHER_DB "SELECT MAX(hourly_time) FROM $WEATHER_TABLE")
 	START_DATE=$(date -d "${LAST_TIME:0:10} - 5 days" +%Y-%m-%d)
 fi 
 
 
-getJson $START_DATE $END_DATE
-jsonToCSV $WEATHER_JSON $WEATHER_CSV
-loadDb $WEATHER_DB $WEATHER_CSV $WEATHER_TABL
+getJson $START_DATE $END_DATE $WEATHER_JSON
+jsonToCsv $WEATHER_JSON $WEATHER_CSV
+loadDb $WEATHER_DB $WEATHER_CSV $WEATHER_TABLE
 
