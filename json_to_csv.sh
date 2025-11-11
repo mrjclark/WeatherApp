@@ -1,1 +1,0 @@
-for i in $(seq 0 $(($(jq ".hourly.time | length" weather-info.json)-1))); do  time=$(jq -r ".hourly.time[$i]" weather-info.json); temp=$(jq ".hourly.temperature_2m[$i]" weather-info.json ); press=$(jq ".hourly.pressure_msl[$i]" weather-info.json); relhum=$(jq ".hourly.relative_humidity_2m[$i]" weather-info.json); echo "$time,$temp,$press,$relhum"; done
