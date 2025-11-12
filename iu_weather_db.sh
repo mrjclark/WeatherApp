@@ -2,6 +2,8 @@
 
 set -eou pipefail
 
+# sudo apt update && sudo install sqlie3 jq -y
+
 START_DATE="2020-01-01" # This is the defualt for if the DB doesn't exist
 END_DATE=$(date +%Y-%m-%d)
 WEATHER_DB="db_weather.db"
