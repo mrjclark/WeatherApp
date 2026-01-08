@@ -130,6 +130,17 @@ function logDebug() {
 	logEvent "DEBUG" $1
 }
 
+function promptyn() {
+	while true; do
+		read -p "$1 [y/n]? " yn
+		case $yn in
+			[Yy]* ) return 0;; # Return 0 for success (yes
+			[Nn]* ) return 1;; # Return 1 for failure (no)
+			* ) echo "Please answer yes or no.";;
+		esac
+	done
+}
+
 # validate_inputs: Ensures all inputs are correctly formatted and within allowed ranges
 function validateInputs() {
   local start_date="$1"
@@ -167,8 +178,8 @@ function validateInputs() {
   # Validate unit (optional, if passed)
   if [[ -n "$unit" ]]; then
     case "$unit" in
-      "Celsius"|"Fahrenheit"|"Kelvin") ;;
-      *) echo "Invalid unit: $unit (allowed: Celsius, Fahrenheit, Kelvin)"; return 1 ;;
+      "°C"|"°F"|"K"|"R"|"hPa"|"m"|"%") ;;
+      *) echo "Invalid unit: $unit (allowed: Celsius, Fahrenheit, Kelvin, Rankin)"; return 1 ;;
     esac
   fi
 
@@ -184,8 +195,14 @@ else
 	START_DATE=$(date -d "${LAST_TIME:0:10} - 5 days" +%Y-%m-%d)
 fi 
 
+if [ -f $WEATHER_JSON ]; then
+	if promptyn "Would you like to use the existing ${WEATHER_JSON}"; then
+		echo "Using existing JSON file"
+	else
+		getJson $LAT_FIELD $LON_FIELD $START_DATE $END_DATE $DATA_FIELDS $TZ_FIELD $WEATHER_JSON 
+	fi
+fi
 
-getJson $LAT_FIELD $LON_FIELD $START_DATE $END_DATE $DATA_FIELDS $TZ_FIELD $WEATHER_JSON 
 jsonToCsv $WEATHER_JSON $WEATHER_CSV
 loadDb $WEATHER_DB $WEATHER_CSV $WEATHER_TABLE
 
