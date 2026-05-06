@@ -85,6 +85,7 @@ function jsonToCsv() {
 	  . as $root |
 	  [range(0; $root.hourly.time | length)][] as $i |
 	  [
+      ($root.latitude|tostring) + "_" + ($root.longitude|tostring) + "_" + ($root.hourly.time[$i]|tostring),
 	    $root.latitude,
 	    $root.longitude,
 	    $root.utc_offset_seconds,
