@@ -11,8 +11,8 @@ WEATHER_TABLE="weather"
 WEATHER_JSON="weather-info.json"
 WEATHER_CSV="weather-info.csv"
 UPDATE_FILE="update_weather_db.sh"
-LAT_FIELD=29.3522 
-LON_FIELD=-95.4602
+LAT_FIELD=29.2538
+LON_FIELD=-95.2719
 TZ_FIELD="America/Chicago"
 DATA_FIELDS="temperature_2m,surface_pressure,relative_humidity_2m"
 
